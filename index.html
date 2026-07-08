@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Operacional Financeiro — 3M Agropecuária</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0c1f38;
+  --navy2:#132c4d;
+  --navy3:#1c3d68;
+  --gold:#b8935a;
+  --gold-light:#f5ecdd;
+  --green:#1e8a5f;
+  --green-light:#e6f4ee;
+  --amber:#c78a1f;
+  --amber-light:#fbf1de;
+  --red:#b3402f;
+  --red-light:#fbeae7;
+  --ink:#16202e;
+  --muted:#647184;
+  --line:#e2e7ee;
+  --bg:#f3f5f8;
+  --card:#ffffff;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+a{color:inherit;}
+
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 55%,var(--navy3) 100%);}
+.login-card{background:var(--card);border-radius:14px;padding:36px 34px 30px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.login-brand .badge{width:38px;height:38px;border-radius:9px;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;}
+.login-brand div h1{font-size:15px;margin:0;color:var(--navy);}
+.login-brand div span{font-size:11px;color:var(--muted);}
+.login-card label{font-size:12px;color:var(--muted);display:block;margin:14px 0 5px;}
+.login-card input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;}
+.login-card input:focus{outline:2px solid var(--navy3);border-color:transparent;}
+.login-btn{width:100%;margin-top:20px;background:var(--navy);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.login-btn:hover{background:var(--navy2);}
+.login-error{margin-top:12px;background:var(--red-light);color:var(--red);padding:9px 11px;border-radius:7px;font-size:12.5px;display:none;}
+.login-note{margin-top:16px;font-size:11px;color:var(--muted);text-align:center;line-height:1.5;}
+.login-loading{font-size:12px;color:var(--muted);margin-top:10px;display:none;}
+
+#appShell{display:none;}
+header{background:var(--navy);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--gold);}
+header .brand{display:flex;align-items:center;gap:12px;}
+header .brand .badge{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.08);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;}
+header h1{font-size:16.5px;margin:0;font-weight:600;}
+header .sub{font-size:11.5px;color:#a9bcd6;margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:14px;font-size:12.5px;}
+.user-chip{background:rgba(255,255,255,.08);padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:8px;}
+.user-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+.logout-link{cursor:pointer;color:#cfe0f2;text-decoration:underline;font-size:12px;}
+
+nav{display:flex;background:var(--navy2);overflow-x:auto;padding:0 8px;}
+nav button{background:none;border:none;color:#b9c8dc;padding:13px 18px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;font-weight:500;}
+nav button.active{color:#fff;border-bottom:3px solid var(--gold);}
+
+main{max-width:1180px;margin:0 auto;padding:20px 18px 70px;}
+.view{display:none;}
+.view.active{display:block;}
+
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy3);}
+.card.ok::before{background:var(--green);}
+.card.warn::before{background:var(--amber);}
+.card.bad::before{background:var(--red);}
+.card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.card .value{font-size:27px;font-weight:700;margin-top:6px;color:var(--navy);}
+.card.ok .value{color:var(--green);}
+.card.warn .value{color:var(--amber);}
+.card.bad .value{color:var(--red);}
+.card .footnote{font-size:11px;color:var(--muted);margin-top:3px;}
+
+section.block{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px;}
+section.block h2{font-size:15px;margin:0 0 4px;color:var(--navy);font-weight:700;}
+section.block .desc{font-size:12.5px;color:var(--muted);margin-bottom:14px;}
+
+.two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+@media (max-width:800px){.two-col{grid-template-columns:1fr;}}
+
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+.checklist-item:last-child{border-bottom:none;}
+.checklist-item input[type=checkbox]{margin-top:2px;width:17px;height:17px;accent-color:var(--green);flex-shrink:0;}
+.checklist-item label{cursor:pointer;flex:1;}
+.checklist-item.done{background:var(--green-light);border-radius:6px;padding-left:8px;margin-left:-8px;}
+.checklist-item.done label{color:var(--green);text-decoration:line-through;font-weight:500;}
+.checklist-item .who{font-size:10.5px;color:var(--muted);margin-left:auto;white-space:nowrap;padding-top:2px;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;background:var(--navy);color:#fff;padding:9px 10px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+th:first-child{border-radius:8px 0 0 8px;}
+th:last-child{border-radius:0 8px 8px 0;}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.bank-name{font-weight:600;color:var(--ink);}
+
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.pill.green{background:var(--green-light);color:var(--green);}
+.pill.amber{background:var(--amber-light);color:var(--amber);}
+.pill.red{background:var(--red-light);color:var(--red);}
+.pill.navy{background:var(--gold-light);color:var(--gold);}
+
+.btn{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;font-weight:600;}
+.btn:hover{background:var(--navy2);}
+.btn.secondary{background:var(--card);color:var(--navy);border:1px solid var(--navy);}
+.btn.gold{background:var(--gold);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.form-row input, .form-row select, .form-row textarea{padding:9px 11px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;flex:1;min-width:150px;}
+.form-row textarea{width:100%;min-height:52px;resize:vertical;}
+
+.anomaly-card{border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;margin-bottom:9px;font-size:13px;}
+.anomaly-card.resolvida{border-left-color:var(--green);opacity:.75;}
+.anomaly-card .meta{font-size:11px;color:var(--muted);margin-top:5px;}
+.anomaly-card .row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+
+.progress-bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px;}
+.progress-bar .fill{height:100%;background:var(--green);transition:width .3s;}
+
+.filters-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:8px;}
+.filters-bar .fgroup{display:flex;flex-direction:column;gap:4px;}
+.filters-bar label{font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+.filters-bar input, .filters-bar select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;}
+
+.chart-wrap{position:relative;height:260px;}
+.empty-msg{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+.export-hint{font-size:11.5px;color:var(--muted);margin-top:8px;}
+
+@media print{
+  header, nav, .login-note, .btn-row, .filters-bar, #loginScreen { display:none !important; }
+  body{ background:#fff; }
+  main{ padding:0; max-width:100%; }
+  section.block{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
+  input, select{ border:none !important; background:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="badge">3M</div>
+      <div><h1>Sistema Operacional Financeiro</h1><span>3M Agropecuária</span></div>
+    </div>
+    <label>E-mail corporativo</label>
+    <input type="email" id="loginEmail" placeholder="nome@3m.agr.br">
+    <label id="labelSenha">Senha</label>
+    <input type="password" id="loginSenha" placeholder="Sua senha">
+    <div id="trocaSenhaBox" style="display:none;">
+      <label>Nova senha</label>
+      <input type="password" id="novaSenha" placeholder="Crie uma nova senha">
+    </div>
+    <button class="login-btn" id="btnLogin" onclick="handleLogin()">Entrar</button>
+    <div class="login-loading" id="loginLoading">Verificando...</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-note">Acesso restrito a e-mails corporativos <strong>@3m.agr.br</strong> cadastrados pelo administrador do sistema.</div>
+  </div>
+</div>
+
+<div id="appShell">
+  <header>
+    <div class="brand">
+      <div class="badge">3M</div>
+      <div><h1>Sistema Operacional Financeiro</h1><div class="sub">3M Agropecuária · Gestão, Análise e Auditoria</div></div>
+    </div>
+    <div class="header-right">
+      <span id="headerDate">—</span>
+      <div class="user-chip"><span class="dot"></span><span id="userChipName">—</span></div>
+      <span class="logout-link" onclick="logout()">Sair</span>
+    </div>
+  </header>
+
+  <nav id="mainNav">
+    <button data-view="dashboard" class="active">Dashboard Executivo</button>
+    <button data-view="caixa">Fluxo de Caixa</button>
+    <button data-view="fiscal">Departamento Fiscal</button>
+    <button data-view="concil">Conciliações</button>
+    <button data-view="anomalias">Anomalias</button>
+    <button data-view="historico">Histórico</button>
+    <button data-view="auditoria">Auditoria</button>
+  </nav>
+
+  <main>
+
+    <div class="view active" id="view-dashboard">
+      <div class="grid-cards" id="overviewCards"></div>
+      <div class="two-col">
+        <section class="block">
+          <h2>Evolução — últimos 14 dias</h2>
+          <div class="desc">Percentual de checklist concluído por área.</div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </section>
+        <section class="block">
+          <h2>Anomalias por área</h2>
+          <div class="desc">Distribuição acumulada de registros.</div>
+          <div class="chart-wrap"><canvas id="anomChart"></canvas></div>
+        </section>
+      </div>
+      <section class="block">
+        <h2>Regra de ouro</h2>
+        <div class="desc" style="margin-bottom:0;">Sem evidência + sem revisão = não vira número final.</div>
+      </section>
+      <section class="block">
+        <h2>Anomalias em aberto</h2>
+        <div id="openAnomaliesOverview"></div>
+      </section>
+    </div>
+
+    <div class="view" id="view-caixa">
+      <section class="block">
+        <h2>Checklist diário — Caixa</h2>
+        <div class="desc">Itens de controle (IC) do dia. Compartilhado entre todos os usuários.</div>
+        <div id="caixaChecklist"></div>
+        <div class="progress-bar"><div class="fill" id="caixaProgressFill"></div></div>
+        <div class="btn-row">
+          <button class="btn secondary" onclick="exportarChecklistXLSX('caixaChecklist','caixa_checklist')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+      </section>
+      <section class="block">
+        <h2>Planilha dos bancos — evidências</h2>
+        <div class="desc">Extrato, contratos/juros e movimentações precisam estar ok antes de fechar.</div>
+        <div style="overflow-x:auto;">
+        <table id="bankTable"><thead><tr><th>Banco</th><th>Extrato</th><th>Contratos/Juros</th><th>Movimentações</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="btn-row"><button class="btn secondary" onclick="exportarXLSX('bankTable','bancos_evidencias')">Exportar XLSX</button></div>
+      </section>
+      <section class="block">
+        <h2>Conciliação de Saldos — Apurado x Oficial</h2>
+        <div class="desc">Digite o saldo que você apurou manualmente e compare com o saldo oficial (SAP/planilha mestra). "Auto" tenta puxar o oficial automaticamente.</div>
+        <div style="overflow-x:auto;">
+        <table id="conciliacaoSaldosTable">
+          <thead><tr><th>Banco</th><th>Saldo Apurado</th><th>Saldo Oficial</th><th>Diferença</th><th>Status</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+        <div class="btn-row" style="margin-top:14px;"><div class="card" id="totalConciliacaoCard" style="flex:1;"></div></div>
+        <div class="btn-row"><button class="btn secondary" onclick="exportarXLSX('conciliacaoSaldosTable','conciliacao_saldos')">Exportar XLSX</button></div>
+      </section>
+
+      <section class="block">
+        <h2>Itens de Controle — Caixa (registro numérico)</h2>
+        <div class="form-row">
+          <input type="text" id="saldoConsolidado" placeholder="Saldo consolidado do dia (R$)">
+          <input type="text" id="variacaoDia" placeholder="Variação vs. dia anterior">
+        </div>
+        <div class="btn-row"><button class="btn" onclick="saveCaixaICs()">Salvar</button></div>
+        <div class="desc" id="caixaICsSaved" style="margin-top:8px;"></div>
+      </section>
+    </div>
+
+    <div class="view" id="view-fiscal">
+      <section class="block"><h2>Checklist diário — Fiscal</h2><div id="fiscalDailyChecklist"></div><div class="progress-bar"><div class="fill" id="fiscalProgressFill"></div></div>
+        <div class="btn-row">
+          <button class="btn secondary" onclick="exportarChecklistXLSX('fiscalDailyChecklist','fiscal_checklist_diario')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+      </section>
+      <section class="block"><h2>Rotina semanal</h2><div id="fiscalWeeklyChecklist"></div></section>
+      <section class="block"><h2>Rotina mensal</h2><div id="fiscalMonthlyChecklist"></div></section>
+      <section class="block"><h2>Dias específicos</h2><div id="fiscalSpecificChecklist"></div></section>
+      <section class="block">
+        <h2>Calendário anual / sazonal</h2>
+        <table>
+          <thead><tr><th>Período</th><th>Obrigação</th></tr></thead>
+          <tbody>
+            <tr><td>Fevereiro</td><td>Elaboração e entrega da declaração DIPAM</td></tr>
+            <tr><td>Maio e Setembro</td><td>Atualização de rebanho junto à defesa agropecuária</td></tr>
+            <tr><td>Setembro</td><td>Declaração de produção de soja</td></tr>
+            <tr><td>Dezembro</td><td>Fechamento do DMG (estoque efetivo)</td></tr>
+            <tr><td>Março a Abril</td><td>Fechamento da safra de soja</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="view" id="view-concil">
+      <section class="block">
+        <h2>Checklist diário — Conciliações & Conferências</h2>
+        <div id="concilChecklist"></div>
+        <div class="progress-bar"><div class="fill" id="concilProgressFill"></div></div>
+        <div class="btn-row">
+          <button class="btn secondary" onclick="exportarChecklistXLSX('concilChecklist','conciliacoes_checklist')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="view" id="view-anomalias">
+      <section class="block">
+        <h2>Registro de Anomalias (Falconi)</h2>
+        <div class="desc">Compartilhado entre todos os setores. Data/hora e usuário são preenchidos automaticamente. Quando o status vira <strong>Realizada</strong>, a linha trava — só natalia@3m.agr.br pode editar depois disso.</div>
+
+        <div class="filters-bar">
+          <div class="fgroup"><label>Setor</label>
+            <select id="anomFiltroSetor"><option value="todos">Todos</option><option value="Caixa">Caixa</option><option value="Fiscal">Fiscal</option><option value="Conciliação">Conciliação</option><option value="Outro">Outro</option></select>
+          </div>
+          <div class="fgroup"><label>Status</label>
+            <select id="anomFiltroStatus"><option value="todos">Todos</option><option value="Aberta">Aberta</option><option value="Em Andamento">Em Andamento</option><option value="Realizada">Realizada</option></select>
+          </div>
+          <div class="fgroup"><label>De</label><input type="date" id="anomFiltroDe"></div>
+          <div class="fgroup"><label>Até</label><input type="date" id="anomFiltroAte"></div>
+          <button class="btn" onclick="loadAnomalias()">Filtrar</button>
+        </div>
+
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn" onclick="abrirNovaAnomalia()">+ Nova anomalia</button>
+          <button class="btn secondary" onclick="exportarXLSX('anomaliasTable','anomalias')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+
+        <div id="novaAnomaliaForm" style="display:none;background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;">
+          <div class="form-row">
+            <input type="text" id="anomDescricao" placeholder="Descrever anomalia">
+            <select id="anomImpacto"><option value="Alto">Impacto: Alto</option><option value="Médio" selected>Impacto: Médio</option><option value="Baixo">Impacto: Baixo</option></select>
+          </div>
+          <div class="form-row">
+            <input type="text" id="anomOnde" placeholder="Onde ocorreu">
+            <input type="text" id="anomCausa" placeholder="Causa provável">
+          </div>
+          <div class="form-row">
+            <input type="text" id="anomContencao" placeholder="Contenção (imediata)">
+            <input type="text" id="anomAcaoDefinitiva" placeholder="Ação definitiva">
+          </div>
+          <div class="form-row">
+            <input type="text" id="anomResponsavel" placeholder="Responsável pela anomalia">
+            <select id="anomSetor">
+              <option value="Caixa">Setor: Caixa</option>
+              <option value="Fiscal">Setor: Fiscal</option>
+              <option value="Conciliação">Setor: Conciliação</option>
+              <option value="Outro">Setor: Outro</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="fgroup" style="flex:1;"><label>Data inicial</label><input type="date" id="anomDataInicial"></div>
+            <div class="fgroup" style="flex:1;"><label>Data final</label><input type="date" id="anomDataFinal"></div>
+            <div class="fgroup" style="flex:1;"><label>Prazo</label><input type="date" id="anomPrazo"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn" onclick="salvarNovaAnomalia()">Salvar anomalia</button>
+            <button class="btn secondary" onclick="document.getElementById('novaAnomaliaForm').style.display='none';">Cancelar</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+        <table id="anomaliasTable">
+          <thead><tr>
+            <th>Data/Hora</th><th>Usuário</th><th>Descrição</th><th>Impacto</th><th>Onde ocorreu</th><th>Causa provável</th>
+            <th>Contenção</th><th>Ação definitiva</th><th>Responsável</th><th>Setor</th>
+            <th>Data inicial</th><th>Data final</th><th>Prazo</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+        <div class="export-hint">Exibindo até 1000 registros mais recentes do filtro.</div>
+      </section>
+    </div>
+
+    <div class="view" id="view-historico">
+      <section class="block">
+        <h2>Histórico consolidado</h2>
+        <div class="desc">Consulte lançamentos de qualquer usuário, área e período — pronto para levar à diretoria.</div>
+        <div class="filters-bar">
+          <div class="fgroup"><label>De</label><input type="date" id="histDe"></div>
+          <div class="fgroup"><label>Até</label><input type="date" id="histAte"></div>
+          <div class="fgroup"><label>Área</label>
+            <select id="histArea"><option value="todas">Todas</option><option value="Caixa">Caixa</option><option value="Bancos">Bancos</option><option value="Fiscal">Fiscal</option><option value="Conciliação">Conciliação</option></select>
+          </div>
+          <div class="fgroup"><label>Usuário</label><select id="histUsuario"><option value="todos">Todos</option></select></div>
+          <button class="btn" onclick="loadHistory()">Filtrar</button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table id="historyTable"><thead><tr><th>Data</th><th>Área</th><th>Item</th><th>Status</th><th>Usuário</th><th>Atualizado em</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="btn-row">
+          <button class="btn secondary" onclick="exportarXLSX('historyTable','historico')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+        <div class="export-hint">Exibindo até 500 registros mais recentes do período filtrado.</div>
+      </section>
+    </div>
+
+    <div class="view" id="view-auditoria">
+      <section class="block">
+        <h2>Log de auditoria</h2>
+        <div class="desc">Toda ação de qualquer usuário fica registrada aqui, com data, hora e responsável.</div>
+        <div class="filters-bar">
+          <div class="fgroup"><label>Últimos (dias)</label><select id="logDias"><option value="7">7</option><option value="30" selected>30</option><option value="90">90</option></select></div>
+          <div class="fgroup"><label>Usuário</label><select id="logUsuario"><option value="todos">Todos</option></select></div>
+          <button class="btn" onclick="loadLogs()">Filtrar</button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table id="logTable"><thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Área</th><th>Detalhe</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="btn-row">
+          <button class="btn secondary" onclick="exportarXLSX('logTable','auditoria')">Exportar XLSX</button>
+          <button class="btn secondary" onclick="exportarPDF()">Exportar PDF</button>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwBjYGNIx5BeKUnxZHGF4Bl7yOGa4ueCREzeKXTF7mpoBNgTA8P4aoujtweZ5UJl-K_/exec';
+
+let CAIXA_ITEMS = [], BANKS = [], FISCAL_DAILY = [], FISCAL_WEEKLY = [], FISCAL_MONTHLY = [], FISCAL_SPECIFIC = [], CONCIL_ITEMS = [];
+let CURRENT_USER = null;
+let STATE = null;
+let TODAY = new Date().toISOString().slice(0,10);
+
+async function apiGet(action, params={}){
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url);
+  return res.json();
+}
+async function apiPost(action, payload={}){
+  const res = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action, ...payload}) });
+  return res.json();
+}
+
+function showError(msg){ const el = document.getElementById('loginError'); el.textContent = msg; el.style.display = 'block'; }
+
+async function handleLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const trocaBox = document.getElementById('trocaSenhaBox');
+  const loading = document.getElementById('loginLoading');
+  document.getElementById('loginError').style.display = 'none';
+
+  if(!email.toLowerCase().endsWith('@3m.agr.br')){ showError('Apenas e-mails @3m.agr.br têm acesso a este sistema.'); return; }
+  if(GAS_URL.indexOf('COLE_AQUI') > -1){ showError('Backend ainda não configurado — defina GAS_URL no código antes de usar em produção.'); return; }
+
+  loading.style.display = 'block';
+  try{
+    if(trocaBox.style.display === 'block'){
+      const nova = document.getElementById('novaSenha').value;
+      if(!nova || nova.length < 4){ showError('Defina uma nova senha (mínimo 4 caracteres).'); loading.style.display='none'; return; }
+      const r = await apiPost('changePassword', { email, novaSenha: nova });
+      if(!r.ok){ showError(r.error || 'Erro ao trocar senha.'); loading.style.display='none'; return; }
+      CURRENT_USER = { email, nome: email.split('@')[0] };
+      sessionStorage.setItem('sof_user', JSON.stringify(CURRENT_USER));
+      enterApp();
+      return;
+    }
+    const r = await apiPost('login', { email, senha });
+    loading.style.display = 'none';
+    if(!r.ok){ showError(r.error || 'Falha no login.'); return; }
+    if(r.primeiroLogin){
+      trocaBox.style.display = 'block';
+      document.getElementById('labelSenha').textContent = 'Senha inicial (fornecida pelo administrador)';
+      showError('Primeiro acesso detectado — defina uma nova senha abaixo e clique em Entrar novamente.');
+      return;
+    }
+    CURRENT_USER = { email: r.email, nome: r.nome };
+    sessionStorage.setItem('sof_user', JSON.stringify(CURRENT_USER));
+    enterApp();
+  }catch(err){
+    loading.style.display = 'none';
+    showError('Não foi possível conectar ao backend. Verifique a URL configurada.');
+  }
+}
+
+function logout(){
+  sessionStorage.removeItem('sof_user');
+  CURRENT_USER = null;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+async function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('userChipName').textContent = CURRENT_USER.nome + ' (' + CURRENT_USER.email + ')';
+  document.getElementById('headerDate').textContent = new Date(TODAY+'T00:00:00').toLocaleDateString('pt-BR');
+  await refreshState();
+  await loadDashboardStats();
+  await loadOpenAnomaliesOverview();
+  populateUserFilters();
+}
+
+document.getElementById('mainNav').addEventListener('click', (e)=>{
+  if(e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  e.target.classList.add('active');
+  const view = e.target.dataset.view;
+  document.getElementById('view-'+view).classList.add('active');
+  if(view === 'historico') loadHistory();
+  if(view === 'auditoria') loadLogs();
+  if(view === 'anomalias') loadAnomalias();
+});
+
+async function refreshState(){
+  const r = await apiGet('getState', { data: TODAY });
+  if(!r.ok) return;
+  STATE = r.state;
+  CAIXA_ITEMS = r.catalog.CAIXA_ITEMS; BANKS = r.catalog.BANKS;
+  FISCAL_DAILY = r.catalog.FISCAL_DAILY; FISCAL_WEEKLY = r.catalog.FISCAL_WEEKLY;
+  FISCAL_MONTHLY = r.catalog.FISCAL_MONTHLY; FISCAL_SPECIFIC = r.catalog.FISCAL_SPECIFIC;
+  CONCIL_ITEMS = r.catalog.CONCIL_ITEMS;
+  renderAll();
+}
+
+function renderChecklist(containerId, items, stateMap, progressFillId, onToggle){
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  items.forEach((txt)=>{
+    const entry = stateMap[txt] || {};
+    const checked = !!entry.status;
+    const div = document.createElement('div');
+    div.className = 'checklist-item'+(checked?' done':'');
+    div.innerHTML = `<input type="checkbox" ${checked?'checked':''}><label>${txt}</label><span class="who">${entry.usuario ? '✎ '+entry.usuario.split('@')[0] : ''}</span>`;
+    div.querySelector('input').addEventListener('change', async (ev)=>{
+      ev.target.disabled = true;
+      await onToggle(txt, ev.target.checked);
+      await refreshState();
+    });
+    c.appendChild(div);
+  });
+  if(progressFillId){
+    const total = items.length;
+    const done = items.filter(t => stateMap[t] && stateMap[t].status).length;
+    const pct = total? Math.round(done/total*100) : 0;
+    document.getElementById(progressFillId).style.width = pct+'%';
+  }
+}
+
+function renderBankTable(){
+  const tbody = document.querySelector('#bankTable tbody');
+  tbody.innerHTML = '';
+  BANKS.forEach(bank=>{
+    const b = STATE.bancos[bank] || {extrato:false, contratos:false, mov:false};
+    const allOk = b.extrato && b.contratos && b.mov;
+    const noneOk = !b.extrato && !b.contratos && !b.mov;
+    const pillClass = allOk? 'green' : (noneOk? 'red':'amber');
+    const pillTxt = allOk? 'OK' : (noneOk? 'Pendente':'Parcial');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="bank-name">${bank}</td>
+      <td><input type="checkbox" data-bank="${bank}" data-field="Extrato" ${b.extrato?'checked':''}></td>
+      <td><input type="checkbox" data-bank="${bank}" data-field="Contratos" ${b.contratos?'checked':''}></td>
+      <td><input type="checkbox" data-bank="${bank}" data-field="Movimentacoes" ${b.mov?'checked':''}></td>
+      <td><span class="pill ${pillClass}">${pillTxt}</span></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input[type=checkbox]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      e.target.disabled = true;
+      await apiPost('saveBankItem', { data: TODAY, banco: e.target.dataset.bank, campo: e.target.dataset.field, status: e.target.checked, usuario: CURRENT_USER.email });
+      await refreshState();
+    });
+  });
+}
+
+function fmtMoeda(v){
+  if(v === '' || v === null || v === undefined || isNaN(parseFloat(v))) return '-';
+  return parseFloat(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function renderConciliacaoSaldos(){
+  const tbody = document.querySelector('#conciliacaoSaldosTable tbody');
+  tbody.innerHTML = '';
+  let totalApurado = 0, totalOficial = 0, countConciliado = 0, countDivergente = 0, countPendente = 0;
+
+  BANKS.forEach(bank=>{
+    const c = (STATE.conciliacaoSaldos && STATE.conciliacaoSaldos[bank]) || {};
+    const apurado = c.apurado ?? '';
+    const oficial = c.oficial ?? '';
+    const status = c.status || 'Pendente';
+    if(!isNaN(parseFloat(apurado))) totalApurado += parseFloat(apurado);
+    if(!isNaN(parseFloat(oficial))) totalOficial += parseFloat(oficial);
+    if(status==='Conciliado') countConciliado++;
+    else if(status==='Divergente') countDivergente++;
+    else countPendente++;
+
+    const pillClass = status==='Conciliado' ? 'green' : status==='Divergente' ? 'red' : 'amber';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="bank-name">${bank}</td>
+      <td><input type="text" inputmode="decimal" data-bank="${bank}" data-field="apurado" value="${apurado}" placeholder="0,00" style="width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;"></td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="text" inputmode="decimal" data-bank="${bank}" data-field="oficial" value="${oficial}" placeholder="0,00" style="width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;">
+          <button class="btn secondary" style="padding:5px 9px;font-size:11px;" onclick="autoPreencherSaldo('${bank}')">Auto</button>
+        </div>
+      </td>
+      <td>${c.diferenca!==undefined && c.diferenca!=='' ? fmtMoeda(c.diferenca) : '-'}</td>
+      <td><span class="pill ${pillClass}">${status}</span></td>
+      <td>${status==='Divergente' ? `<button class="btn secondary" style="padding:5px 9px;font-size:11px;" onclick="criarAnomaliaDivergencia('${bank}', ${c.diferenca})">+ Anomalia</button>` : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('input[data-field=apurado]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      await apiPost('saveSaldoApurado', { data: TODAY, banco: e.target.dataset.bank, saldoApurado: e.target.value.replace(',','.'), usuario: CURRENT_USER.email });
+      await refreshState();
+    });
+  });
+  tbody.querySelectorAll('input[data-field=oficial]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      await apiPost('saveSaldoOficial', { data: TODAY, banco: e.target.dataset.bank, saldoOficial: e.target.value.replace(',','.'), usuario: CURRENT_USER.email, origem:'manual' });
+      await refreshState();
+    });
+  });
+
+  const diffTotal = totalApurado - totalOficial;
+  const totalStatus = countDivergente>0 ? 'Divergente' : (countPendente>0 ? 'Pendente' : 'Conciliado');
+  const totalCls = totalStatus==='Conciliado'?'ok':totalStatus==='Divergente'?'bad':'warn';
+  const totalCard = document.getElementById('totalConciliacaoCard');
+  totalCard.className = 'card ' + totalCls;
+  totalCard.innerHTML = `
+    <div class="label">Total consolidado do dia</div>
+    <div class="value">${fmtMoeda(totalApurado)}</div>
+    <div class="footnote">Oficial: ${fmtMoeda(totalOficial)} · Diferença: ${fmtMoeda(diffTotal)} · ${countConciliado} conciliado(s), ${countDivergente} divergente(s), ${countPendente} pendente(s)</div>
+  `;
+}
+
+async function autoPreencherSaldo(bank){
+  const r = await apiPost('buscarSaldoOficialAuto', { data: TODAY, banco: bank });
+  if(!r.ok){ alert('Não foi possível preencher automaticamente:\n' + r.error); return; }
+  await apiPost('saveSaldoOficial', { data: TODAY, banco: bank, saldoOficial: r.saldo, usuario: CURRENT_USER.email, origem:'auto' });
+  await refreshState();
+}
+
+let ANOMALIAS_ADMIN_EMAIL = 'natalia@3m.agr.br';
+
+function criarAnomaliaDivergencia(bank, diferenca){
+  apiPost('criarAnomalia', {
+    usuario: CURRENT_USER.email,
+    descricao: `Divergência de saldo — ${bank}: diferença de ${fmtMoeda(diferenca)} entre apurado e oficial`,
+    impacto: Math.abs(diferenca) > 1000 ? 'Alto' : 'Médio',
+    ondeOcorreu: bank,
+    setorResponsavel: 'Caixa',
+    dataInicial: TODAY
+  }).then(()=>{
+    document.querySelector('nav button[data-view="anomalias"]').click();
+    loadAnomalias();
+  });
+}
+
+async function saveCaixaICs(){
+  const saldo = document.getElementById('saldoConsolidado').value;
+  const variacao = document.getElementById('variacaoDia').value;
+  await apiPost('saveIC', { data: TODAY, saldo, variacao, usuario: CURRENT_USER.email });
+  document.getElementById('caixaICsSaved').textContent = 'Salvo por ' + CURRENT_USER.nome + ' às ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+function abrirNovaAnomalia(){
+  document.getElementById('novaAnomaliaForm').style.display = 'block';
+}
+
+async function salvarNovaAnomalia(){
+  const descricao = document.getElementById('anomDescricao').value.trim();
+  if(!descricao){ alert('Descreva a anomalia antes de salvar.'); return; }
+  await apiPost('criarAnomalia', {
+    usuario: CURRENT_USER.email,
+    descricao,
+    impacto: document.getElementById('anomImpacto').value,
+    ondeOcorreu: document.getElementById('anomOnde').value,
+    causaProvavel: document.getElementById('anomCausa').value,
+    contencaoImediata: document.getElementById('anomContencao').value,
+    acaoDefinitiva: document.getElementById('anomAcaoDefinitiva').value,
+    responsavel: document.getElementById('anomResponsavel').value,
+    setorResponsavel: document.getElementById('anomSetor').value,
+    dataInicial: document.getElementById('anomDataInicial').value,
+    dataFinal: document.getElementById('anomDataFinal').value,
+    prazo: document.getElementById('anomPrazo').value
+  });
+  ['anomDescricao','anomOnde','anomCausa','anomContencao','anomAcaoDefinitiva','anomResponsavel','anomDataInicial','anomDataFinal','anomPrazo']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('novaAnomaliaForm').style.display = 'none';
+  await loadAnomalias();
+  await loadOpenAnomaliesOverview();
+}
+
+async function atualizarCampoAnomalia(id, campo, valor, el){
+  if(el) el.disabled = true;
+  const r = await apiPost('atualizarCampoAnomalia', { id, campo, valor, usuario: CURRENT_USER.email });
+  if(!r.ok){
+    alert(r.error);
+    await loadAnomalias();
+    return;
+  }
+  await loadAnomalias();
+  await loadOpenAnomaliesOverview();
+  loadDashboardStats();
+}
+
+function campoTexto(id, campo, valor, travado){
+  const val = (valor==null?'':String(valor)).replace(/"/g,'&quot;');
+  return `<input type="text" value="${val}" ${travado?'disabled':''} onchange="atualizarCampoAnomalia('${id}','${campo}',this.value,this)" style="border:1px solid var(--line);border-radius:5px;padding:5px 7px;font-size:12px;width:140px;">`;
+}
+function campoData(id, campo, valor, travado){
+  const dv = valor ? String(valor).slice(0,10) : '';
+  return `<input type="date" value="${dv}" ${travado?'disabled':''} onchange="atualizarCampoAnomalia('${id}','${campo}',this.value,this)" style="border:1px solid var(--line);border-radius:5px;padding:5px 7px;font-size:12px;">`;
+}
+function campoSelect(id, campo, valor, opcoes, travado){
+  return `<select ${travado?'disabled':''} onchange="atualizarCampoAnomalia('${id}','${campo}',this.value,this)" style="border:1px solid var(--line);border-radius:5px;padding:5px 7px;font-size:12px;">
+    ${opcoes.map(o=>`<option value="${o}" ${o===valor?'selected':''}>${o}</option>`).join('')}
+  </select>`;
+}
+
+async function loadAnomalias(){
+  const setor = document.getElementById('anomFiltroSetor').value;
+  const status = document.getElementById('anomFiltroStatus').value;
+  const de = document.getElementById('anomFiltroDe').value;
+  const ate = document.getElementById('anomFiltroAte').value;
+  const r = await apiGet('getAnomalias', { setor, status, de: de||'', ate: ate||'' });
+  const tbody = document.querySelector('#anomaliasTable tbody');
+  tbody.innerHTML = '';
+  if(!r.ok){ tbody.innerHTML = '<tr><td colspan="14" class="empty-msg">Erro ao carregar anomalias.</td></tr>'; return; }
+  if(r.adminEmail) ANOMALIAS_ADMIN_EMAIL = r.adminEmail;
+  if(!r.rows.length){ tbody.innerHTML = '<tr><td colspan="14" class="empty-msg">Nenhuma anomalia registrada para esse filtro.</td></tr>'; return; }
+
+  const souAdmin = CURRENT_USER.email.trim().toLowerCase() === ANOMALIAS_ADMIN_EMAIL.trim().toLowerCase();
+
+  r.rows.forEach(row=>{
+    const travado = row.Status === 'Realizada' && !souAdmin;
+    const tr = document.createElement('tr');
+    if(row.Status === 'Realizada') tr.style.background = 'var(--green-light)';
+    tr.innerHTML = `
+      <td style="white-space:nowrap;font-size:11.5px;color:var(--muted);">${row.DataHoraAbertura ? new Date(row.DataHoraAbertura).toLocaleString('pt-BR') : '-'}</td>
+      <td style="font-size:11.5px;white-space:nowrap;">${(row.UsuarioAbertura||'').split('@')[0]}</td>
+      <td>${campoTexto(row.ID,'Descricao', row.Descricao, travado)}</td>
+      <td>${campoSelect(row.ID,'Impacto', row.Impacto||'Médio', ['Alto','Médio','Baixo'], travado)}</td>
+      <td>${campoTexto(row.ID,'OndeOcorreu', row.OndeOcorreu, travado)}</td>
+      <td>${campoTexto(row.ID,'CausaProvavel', row.CausaProvavel, travado)}</td>
+      <td>${campoTexto(row.ID,'ContencaoImediata', row.ContencaoImediata, travado)}</td>
+      <td>${campoTexto(row.ID,'AcaoDefinitiva', row.AcaoDefinitiva, travado)}</td>
+      <td>${campoTexto(row.ID,'Responsavel', row.Responsavel, travado)}</td>
+      <td>${campoSelect(row.ID,'SetorResponsavel', row.SetorResponsavel||'Outro', ['Caixa','Fiscal','Conciliação','Outro'], travado)}</td>
+      <td>${campoData(row.ID,'DataInicial', row.DataInicial, travado)}</td>
+      <td>${campoData(row.ID,'DataFinal', row.DataFinal, travado)}</td>
+      <td>${campoData(row.ID,'Prazo', row.Prazo, travado)}</td>
+      <td>${campoSelect(row.ID,'Status', row.Status||'Aberta', ['Aberta','Em Andamento','Realizada'], travado)}${row.Status==='Realizada' ? `<div style="font-size:10px;color:var(--green);margin-top:3px;">🔒 ${souAdmin?'editável (você)':'travado'}</div>` : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadOpenAnomaliesOverview(){
+  const r = await apiGet('getAnomalias', { status: 'Aberta' });
+  const el = document.getElementById('openAnomaliesOverview');
+  if(!r.ok || !r.rows.length){ el.innerHTML = '<div class="empty-msg">Nenhuma anomalia aberta. 👍</div>'; return; }
+  el.innerHTML = r.rows.slice(0,6).map(a=>`<div class="anomaly-card"><div class="row"><strong>${a.Descricao || '(sem descrição)'}</strong><span class="pill ${a.Impacto==='Alto'?'red':a.Impacto==='Médio'?'amber':'green'}">${a.Impacto||'-'}</span></div><div class="meta">Setor: ${a.SetorResponsavel||'-'} · ${a.UsuarioAbertura?a.UsuarioAbertura.split('@')[0]:''}</div></div>`).join('');
+  if(r.rows.length > 6){
+    el.innerHTML += `<div class="btn-row"><button class="btn secondary" onclick="document.querySelector('nav button[data-view=anomalias]').click()">Ver todas (${r.rows.length})</button></div>`;
+  }
+}
+
+/* ===================== EXPORTAÇÃO XLSX / PDF ===================== */
+function tableToAOA(table){
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr=>{
+    const row = [];
+    tr.querySelectorAll('th,td').forEach(cell=>{
+      const campo = cell.querySelector('input,select,textarea');
+      if(campo){
+        if(campo.type === 'checkbox') row.push(campo.checked ? 'Sim' : 'Não');
+        else row.push(campo.value);
+      } else {
+        row.push(cell.innerText.trim());
+      }
+    });
+    if(row.length) rows.push(row);
+  });
+  return rows;
+}
+function exportarChecklistXLSX(containerId, nomeArquivo){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const aoa = [['Item','Status']];
+  container.querySelectorAll('.checklist-item').forEach(item=>{
+    const label = item.querySelector('label').textContent.trim();
+    const checked = item.querySelector('input[type=checkbox]').checked;
+    aoa.push([label, checked ? 'Concluído' : 'Pendente']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Checklist');
+  XLSX.writeFile(wb, nomeArquivo + '_' + TODAY + '.xlsx');
+}
+function exportarXLSX(tableId, nomeArquivo){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const aoa = tableToAOA(table);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+  XLSX.writeFile(wb, (nomeArquivo||'exportacao') + '_' + TODAY + '.xlsx');
+}
+function exportarPDF(){
+  window.print();
+}
+
+
+function pctFromMap(map, items){
+  const done = items.filter(t => map[t] && map[t].status).length;
+  return items.length ? Math.round(done/items.length*100) : 0;
+}
+function renderOverview(){
+  const caixaPct = pctFromMap(STATE.caixa, CAIXA_ITEMS);
+  const fiscalPct = pctFromMap(STATE.fiscal.daily, FISCAL_DAILY);
+  const concilPct = pctFromMap(STATE.concil, CONCIL_ITEMS);
+  const bankOk = BANKS.filter(b=>{ const bk = STATE.bancos[b]; return bk && bk.extrato && bk.contratos && bk.mov; }).length;
+  const openAnom = STATE.anomaliasResumo ? (STATE.anomaliasResumo.abertas + STATE.anomaliasResumo.emAndamento) : 0;
+  const concSaldos = Object.values(STATE.conciliacaoSaldos || {});
+  const concConciliados = concSaldos.filter(v=>v.status==='Conciliado').length;
+  const concDivergentes = concSaldos.filter(v=>v.status==='Divergente').length;
+  const cards = [
+    {label:'Caixa', value: caixaPct+'%', cls: caixaPct===100?'ok':(caixaPct===0?'bad':'warn'), foot:'Checklist de hoje'},
+    {label:'Fiscal', value: fiscalPct+'%', cls: fiscalPct===100?'ok':(fiscalPct===0?'bad':'warn'), foot:'Rotina diária'},
+    {label:'Conciliação', value: concilPct+'%', cls: concilPct===100?'ok':(concilPct===0?'bad':'warn'), foot:'Fechamento do dia'},
+    {label:'Bancos ok', value: bankOk+'/'+BANKS.length, cls: bankOk===BANKS.length?'ok':'warn', foot:'Evidências completas'},
+    {label:'Saldos conciliados', value: concConciliados+'/'+BANKS.length, cls: concDivergentes>0?'bad':(concConciliados===BANKS.length?'ok':'warn'), foot: concDivergentes>0 ? concDivergentes+' divergência(s)' : 'Apurado x Oficial'},
+    {label:'Anomalias abertas', value: openAnom, cls: openAnom===0?'ok':'bad', foot:'Ação necessária'}
+  ];
+  document.getElementById('overviewCards').innerHTML = cards.map(c=>`<div class="card ${c.cls}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="footnote">${c.foot}</div></div>`).join('');
+}
+
+let trendChartInstance = null, anomChartInstance = null;
+async function loadDashboardStats(){
+  const r = await apiGet('getDashboardStats', { dias: 14 });
+  if(!r.ok) return;
+  const ctx1 = document.getElementById('trendChart').getContext('2d');
+  if(trendChartInstance) trendChartInstance.destroy();
+  trendChartInstance = new Chart(ctx1, {
+    type:'line',
+    data:{ labels: r.series.map(s => s.data.slice(5).split('-').reverse().join('/')),
+      datasets:[
+        {label:'Caixa', data:r.series.map(s=>s.caixa), borderColor:'#1e8a5f', tension:.3, borderWidth:2, pointRadius:2},
+        {label:'Fiscal', data:r.series.map(s=>s.fiscal), borderColor:'#b8935a', tension:.3, borderWidth:2, pointRadius:2},
+        {label:'Conciliação', data:r.series.map(s=>s.concil), borderColor:'#0c1f38', tension:.3, borderWidth:2, pointRadius:2}
+      ] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } }, plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11}}}} }
+  });
+  const ctx2 = document.getElementById('anomChart').getContext('2d');
+  const porSetor = r.anomalias.porSetor || {};
+  const labels = Object.keys(porSetor);
+  if(anomChartInstance) anomChartInstance.destroy();
+  anomChartInstance = new Chart(ctx2, {
+    type:'doughnut',
+    data:{ labels: labels.length?labels:['Sem dados'], datasets:[{ data: labels.length?Object.values(porSetor):[1], backgroundColor:['#b3402f','#c78a1f','#0c1f38','#1e8a5f'] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11}}}} }
+  });
+}
+
+async function populateUserFilters(){
+  const r = await apiGet('getUsers');
+  if(!r.ok) return;
+  const opts = r.users.map(u => `<option value="${u.Email}">${u.Nome}</option>`).join('');
+  document.getElementById('histUsuario').innerHTML = '<option value="todos">Todos</option>' + opts;
+  document.getElementById('logUsuario').innerHTML = '<option value="todos">Todos</option>' + opts;
+}
+
+async function loadHistory(){
+  const de = document.getElementById('histDe').value;
+  const ate = document.getElementById('histAte').value;
+  const area = document.getElementById('histArea').value;
+  const usuario = document.getElementById('histUsuario').value;
+  const r = await apiGet('getHistory', { de: de||'', ate: ate||'', area, usuario });
+  const tbody = document.querySelector('#historyTable tbody');
+  tbody.innerHTML = '';
+  if(!r.ok || !r.rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Nenhum registro encontrado para o filtro.</td></tr>'; return; }
+  r.rows.forEach(row=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.data}</td><td>${row.area}</td><td>${row.item}</td><td><span class="pill ${row.status?'green':'red'}">${row.status?'Concluído':'Pendente'}</span></td><td>${row.usuario||'-'}</td><td>${row.em ? new Date(row.em).toLocaleString('pt-BR') : '-'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadLogs(){
+  const dias = document.getElementById('logDias').value;
+  const usuario = document.getElementById('logUsuario').value;
+  const r = await apiGet('getLogs', { dias, usuario });
+  const tbody = document.querySelector('#logTable tbody');
+  tbody.innerHTML = '';
+  if(!r.ok || !r.logs.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Nenhum log encontrado.</td></tr>'; return; }
+  r.logs.forEach(l=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${new Date(l.Timestamp).toLocaleString('pt-BR')}</td><td>${l.Usuario}</td><td>${l.Acao}</td><td>${l.Area}</td><td>${l.Detalhe||'-'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAll(){
+  renderChecklist('caixaChecklist', CAIXA_ITEMS, STATE.caixa, 'caixaProgressFill',
+    (item, status) => apiPost('saveChecklistItem', { area:'caixa', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderChecklist('fiscalDailyChecklist', FISCAL_DAILY, STATE.fiscal.daily, 'fiscalProgressFill',
+    (item, status) => apiPost('saveChecklistItem', { area:'fiscal', tipo:'daily', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderChecklist('fiscalWeeklyChecklist', FISCAL_WEEKLY, STATE.fiscal.weekly, null,
+    (item, status) => apiPost('saveChecklistItem', { area:'fiscal', tipo:'weekly', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderChecklist('fiscalMonthlyChecklist', FISCAL_MONTHLY, STATE.fiscal.monthly, null,
+    (item, status) => apiPost('saveChecklistItem', { area:'fiscal', tipo:'monthly', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderChecklist('fiscalSpecificChecklist', FISCAL_SPECIFIC, STATE.fiscal.specific, null,
+    (item, status) => apiPost('saveChecklistItem', { area:'fiscal', tipo:'specific', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderChecklist('concilChecklist', CONCIL_ITEMS, STATE.concil, 'concilProgressFill',
+    (item, status) => apiPost('saveChecklistItem', { area:'concil', data:TODAY, item, status, usuario:CURRENT_USER.email }));
+  renderBankTable();
+  renderConciliacaoSaldos();
+  renderOverview();
+  if(STATE.ic){
+    document.getElementById('saldoConsolidado').value = STATE.ic.saldo || '';
+    document.getElementById('variacaoDia').value = STATE.ic.variacao || '';
+  }
+}
+
+(function init(){
+  const saved = sessionStorage.getItem('sof_user');
+  if(saved){ CURRENT_USER = JSON.parse(saved); enterApp(); }
+  document.getElementById('histAte').value = TODAY;
+  const de = new Date(); de.setDate(de.getDate()-30);
+  document.getElementById('histDe').value = de.toISOString().slice(0,10);
+})();
+</script>
+</body>
+</html>
